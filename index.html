@@ -1,4 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Pokestat</title>
+  <style>
+    body { font-family: Arial; text-align: center; background: #111; color: white; }
+    .screen { display: none; }
+    .active { display: block; }
+    .scard { border: 1px solid white; padding: 10px; margin: 5px; cursor: pointer; }
+    .spick { background: orange; }
+  </style>
+</head>
+
+<body>
+
+<div id="title-screen" class="screen active">
+  <h1>Pokestat</h1>
+  <button onclick="startVsAI()">Start</button>
+</div>
+
+<div id="game-screen" class="screen">
+  <h2>Round <span id="round-num"></span></h2>
+  <h3 id="poke-name"></h3>
+  <img id="poke-img" width="120">
+
+  <div id="p1-grid"></div>
+
+  <button id="confirm-btn" onclick="confirmChoice()">Confirm</button>
+
+  <p>Score: <span id="score-p1">0</span> - <span id="score-p2">0</span></p>
+
+  <div id="log-content"></div>
+</div>
+
+<div id="end-screen" class="screen">
+  <h1 id="end-title"></h1>
+  <p><span id="tot-p1"></span> - <span id="tot-p2"></span></p>
+  <button onclick="resetGame()">Restart</button>
+</div>
+
 <script>
+// TON CODE (je garde le tien)
+
 const STAT_DEFS = [
   { key: 'hp', label: 'HP', emoji: '❤️' },
   { key: 'attack', label: 'Attack', emoji: '⚔️' },
@@ -6,7 +48,6 @@ const STAT_DEFS = [
   { key: 'speed', label: 'Speed', emoji: '⚡' }
 ];
 
-// Exemple de Pokédex (tu peux en ajouter plein)
 const POKEDEX = [
   {
     name: "Pikachu",
@@ -56,10 +97,7 @@ function nextRound() {
   G.currentPokemon = p;
 
   document.getElementById('round-num').textContent = G.round;
-
-  // ✅ NOM VISIBLE
   document.getElementById('poke-name').textContent = p.name;
-
   document.getElementById('poke-img').src = p.sprite;
 
   renderStats();
@@ -113,10 +151,10 @@ function resolveRound() {
 
   if (v1 > v2) {
     G.p1Score += v1;
-    addLog("You win this round!");
+    addLog("You win!");
   } else if (v2 > v1) {
     G.p2Score += v2;
-    addLog("AI wins this round!");
+    addLog("AI wins!");
   } else {
     addLog("Draw!");
   }
@@ -126,11 +164,8 @@ function resolveRound() {
 
   setTimeout(() => {
     G.round++;
-    if (G.round > 6) {
-      endGame();
-    } else {
-      nextRound();
-    }
+    if (G.round > 6) endGame();
+    else nextRound();
   }, 1500);
 }
 
@@ -156,10 +191,12 @@ function addLog(text) {
   const d = document.createElement('div');
   d.textContent = text;
   c.appendChild(d);
-  c.scrollTop = c.scrollHeight;
 }
 
 function clearLog() {
   document.getElementById('log-content').innerHTML = '';
 }
 </script>
+
+</body>
+</html>
