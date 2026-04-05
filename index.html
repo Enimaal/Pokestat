@@ -3,35 +3,63 @@
 <head>
   <title>Pokestat</title>
   <style>
-    body { font-family: Arial; text-align: center; background: #111; color: white; }
+    body {
+      font-family: Arial;
+      text-align: center;
+      background: #111;
+      color: white;
+    }
+
     .screen { display: none; }
     .active { display: block; }
-    .scard { border: 1px solid white; padding: 10px; margin: 5px; cursor: pointer; }
-    .spick { background: orange; }
+
+    button {
+      padding: 10px;
+      margin: 10px;
+      cursor: pointer;
+    }
+
+    .scard {
+      border: 1px solid white;
+      padding: 10px;
+      margin: 5px;
+      cursor: pointer;
+    }
+
+    .spick {
+      background: orange;
+    }
   </style>
 </head>
 
 <body>
 
+<!-- MENU -->
 <div id="title-screen" class="screen active">
   <h1>Pokestat</h1>
-  <button onclick="startVsAI()">Start</button>
+  <button onclick="startGame('ai')">VS IA</button>
+  <button onclick="startGame('pvp')">2 Joueurs</button>
 </div>
 
+<!-- JEU -->
 <div id="game-screen" class="screen">
   <h2>Round <span id="round-num"></span></h2>
-  <h3 id="poke-name"></h3>
+
+  <h2 id="poke-name"></h2>
   <img id="poke-img" width="120">
+
+  <h3 id="turn-text"></h3>
 
   <div id="p1-grid"></div>
 
-  <button id="confirm-btn" onclick="confirmChoice()">Confirm</button>
+  <button id="confirm-btn" onclick="confirmChoice()">Confirmer</button>
 
   <p>Score: <span id="score-p1">0</span> - <span id="score-p2">0</span></p>
 
   <div id="log-content"></div>
 </div>
 
+<!-- FIN -->
 <div id="end-screen" class="screen">
   <h1 id="end-title"></h1>
   <p><span id="tot-p1"></span> - <span id="tot-p2"></span></p>
@@ -39,8 +67,6 @@
 </div>
 
 <script>
-// TON CODE (je garde le tien)
-
 const STAT_DEFS = [
   { key: 'hp', label: 'HP', emoji: '❤️' },
   { key: 'attack', label: 'Attack', emoji: '⚔️' },
@@ -49,24 +75,17 @@ const STAT_DEFS = [
 ];
 
 const POKEDEX = [
-  {
-    name: "Pikachu",
-    sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/25.png",
-    stats: { hp: 35, attack: 55, defense: 40, speed: 90 }
-  },
-  {
-    name: "Charizard",
-    sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/6.png",
-    stats: { hp: 78, attack: 84, defense: 78, speed: 100 }
-  },
-  {
-    name: "Blastoise",
-    sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/9.png",
-    stats: { hp: 79, attack: 83, defense: 100, speed: 78 }
-  }
+  { name: "Pikachu", sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/25.png",
+    stats: { hp: 35, attack: 55, defense: 40, speed: 90 } },
+  { name: "Charizard", sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/6.png",
+    stats: { hp: 78, attack: 84, defense: 78, speed: 100 } },
+  { name: "Blastoise", sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/9.png",
+    stats: { hp: 79, attack: 83, defense: 100, speed: 78 } }
 ];
 
 let G = {
+  mode: "ai",
+  turn: 1,
   round: 1,
   p1Score: 0,
   p2Score: 0,
@@ -80,7 +99,8 @@ function showScreen(id) {
   document.getElementById(id).classList.add('active');
 }
 
-function startVsAI() {
+function startGame(mode) {
+  G.mode = mode;
   G.round = 1;
   G.p1Score = 0;
   G.p2Score = 0;
@@ -90,6 +110,7 @@ function startVsAI() {
 
 function nextRound() {
   clearLog();
+  G.turn = 1;
   G.p1Choice = null;
   G.p2Choice = null;
 
@@ -100,8 +121,18 @@ function nextRound() {
   document.getElementById('poke-name').textContent = p.name;
   document.getElementById('poke-img').src = p.sprite;
 
+  updateTurnText();
   renderStats();
   document.getElementById('confirm-btn').disabled = true;
+}
+
+function updateTurnText() {
+  if (G.mode === "pvp") {
+    document.getElementById('turn-text').textContent =
+      G.turn === 1 ? "Joueur 1 choisit" : "Joueur 2 choisit";
+  } else {
+    document.getElementById('turn-text').textContent = "Choisis ta stat";
+  }
 }
 
 function renderStats() {
@@ -111,33 +142,50 @@ function renderStats() {
   STAT_DEFS.forEach(stat => {
     const div = document.createElement('div');
     div.className = 'scard';
+
     div.innerHTML = `
       <span>${stat.emoji}</span>
       <div>${stat.label}</div>
       <div>??</div>
     `;
+
     div.onclick = () => selectStat(stat.key, div);
     grid.appendChild(div);
   });
 }
 
 function selectStat(stat, el) {
-  if (G.p1Choice) return;
+  if (G.mode === "pvp" && G.turn === 2 && G.p2Choice) return;
+  if (G.mode === "ai" && G.p1Choice) return;
 
-  G.p1Choice = stat;
   document.querySelectorAll('.scard').forEach(e => e.classList.remove('spick'));
   el.classList.add('spick');
+
+  if (G.mode === "pvp") {
+    if (G.turn === 1) G.p1Choice = stat;
+    else G.p2Choice = stat;
+  } else {
+    G.p1Choice = stat;
+  }
 
   document.getElementById('confirm-btn').disabled = false;
 }
 
 function confirmChoice() {
-  if (!G.p1Choice) return;
-
-  const stats = STAT_DEFS.map(s => s.key);
-  G.p2Choice = stats[Math.floor(Math.random() * stats.length)];
-
-  resolveRound();
+  if (G.mode === "pvp") {
+    if (G.turn === 1) {
+      G.turn = 2;
+      updateTurnText();
+      renderStats();
+      document.getElementById('confirm-btn').disabled = true;
+    } else {
+      resolveRound();
+    }
+  } else {
+    const stats = STAT_DEFS.map(s => s.key);
+    G.p2Choice = stats[Math.floor(Math.random() * stats.length)];
+    resolveRound();
+  }
 }
 
 function resolveRound() {
@@ -146,17 +194,17 @@ function resolveRound() {
   const v1 = p.stats[G.p1Choice];
   const v2 = p.stats[G.p2Choice];
 
-  addLog(`You chose ${G.p1Choice}: ${v1}`);
-  addLog(`AI chose ${G.p2Choice}: ${v2}`);
+  addLog(`J1: ${G.p1Choice} (${v1})`);
+  addLog(`J2: ${G.p2Choice} (${v2})`);
 
   if (v1 > v2) {
     G.p1Score += v1;
-    addLog("You win!");
+    addLog("Joueur 1 gagne !");
   } else if (v2 > v1) {
     G.p2Score += v2;
-    addLog("AI wins!");
+    addLog("Joueur 2 gagne !");
   } else {
-    addLog("Draw!");
+    addLog("Égalité !");
   }
 
   document.getElementById('score-p1').textContent = G.p1Score;
@@ -175,9 +223,9 @@ function endGame() {
   document.getElementById('tot-p1').textContent = G.p1Score;
   document.getElementById('tot-p2').textContent = G.p2Score;
 
-  let title = "Draw";
-  if (G.p1Score > G.p2Score) title = "Victory!";
-  if (G.p2Score > G.p1Score) title = "Defeat!";
+  let title = "Égalité";
+  if (G.p1Score > G.p2Score) title = "Joueur 1 gagne !";
+  if (G.p2Score > G.p1Score) title = "Joueur 2 gagne !";
 
   document.getElementById('end-title').textContent = title;
 }
@@ -198,5 +246,7 @@ function clearLog() {
 }
 </script>
 
+</body>
+</html>
 </body>
 </html>
